@@ -11,7 +11,8 @@ extension Interpose {
 
         override func replaceImplementation() throws {
             let method = try validate()
-            origIMP = class_replaceMethod(`class`, selector, replacementIMP, method_getTypeEncoding(method))
+            let _origIMP = class_getMethodImplementation(`class`, selector)
+            origIMP = class_replaceMethod(`class`, selector, replacementIMP, method_getTypeEncoding(method)) ?? _origIMP
             guard origIMP != nil else { throw InterposeError.nonExistingImplementation(`class`, selector) }
             Interpose.log("Swizzled -[\(`class`).\(selector)] IMP: \(origIMP!) -> \(replacementIMP!)")
         }
