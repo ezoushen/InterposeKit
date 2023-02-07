@@ -1,4 +1,5 @@
 import Foundation
+import SuperBuilder
 
 extension Interpose {
 
@@ -153,19 +154,14 @@ extension Interpose {
         }
 
         #if !os(Linux)
-        private lazy var addSuperImpl: @convention(c) (AnyClass, Selector, NSErrorPointer) -> Bool = {
-            let handle = dlopen(nil, RTLD_LAZY)
-            let imp = dlsym(handle, "IKTAddSuperImplementationToClass")
-            return unsafeBitCast(imp, to: (@convention(c) (AnyClass, Selector, NSErrorPointer) -> Bool).self)
-        }()
-
         private func addSuperTrampolineMethod(subclass: AnyClass) {
-            var error: NSError?
-            if addSuperImpl(subclass, self.selector, &error) == false {
-                Interpose.log("Failed to add super implementation to -[\(`class`).\(selector)]: \(error!)")
-            } else {
+            do {
+                try SuperBuilder.addSuperInstanceMethod(
+                    to: subclass, selector: self.selector)
                 let imp = class_getMethodImplementation(subclass, self.selector)!
                 Interpose.log("Added super for -[\(`class`).\(selector)]: \(imp)")
+            } catch {
+                Interpose.log("Failed to add super implementation to -[\(`class`).\(selector)]: \(error)")
             }
         }
         #else
